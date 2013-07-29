@@ -1,0 +1,286 @@
+%\VignetteIndexEntry{TargetScore: Infer microRNA targets using microRNA-overexpression data and sequence information}
+%\VignettePackage{TargetScore}
+
+\documentclass[12pt]{article}
+
+\usepackage[left=1in,top=1in,right=1in, bottom=1in]{geometry}
+\usepackage{Sweave}
+\usepackage{times}
+\usepackage{hyperref}
+\usepackage{subfig}
+\usepackage{natbib}
+\usepackage{graphicx}
+
+\hypersetup{ 
+colorlinks,
+citecolor=black,
+filecolor=black, 
+linkcolor=black, 
+urlcolor=black 
+}
+
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textit{#1}}}
+\newcommand{\Rmethod}[1]{{\texttt{#1}}}
+\newcommand{\Rfunarg}[1]{{\texttt{#1}}}
+\newcommand{\Rclass}[1]{{\textit{#1}}}
+\newcommand{\Rcode}[1]{{\texttt{#1}}}
+
+\newcommand{\SD}{Supplementary Data}
+
+\newcommand{\software}[1]{\textsf{#1}}
+\newcommand{\R}{\textsf{R}}
+
+
+\bibliographystyle{plainnat}
+
+\title{\Rpackage{TargetScore}: Infer microRNA targets using microRNA-overexpression data and sequence information}
+\author{Yue Li \\ \texttt{yueli@cs.toronto.edu}}
+\date{\today}
+
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+\maketitle
+
+
+\section{Introduction}
+MicroRNAs (miRNAs) are known to repress gene expression in mammalian species by forming Watson-Crick (WC) base-pairing to the 3$'$ UTR regions of the target mRNA transcripts (\cite{Friedman:2009km}). The binding primarily occurs at the 2-7 nucleotide (nt) positions from the 5$'$ end of the miRNA, which is termed as the ``seed" and the binding as the ``seed match" (\cite{Lewis:2003uz}). MicroRNA regulations have been implicated in numerous developmental and pathogenic processes (\cite{Bartel:2009fh}). Functional characterization of miRNAs depends on precise identification of their corresponding targets. However, accurate identification of miRNA targets remains a challenge with the current state-of-the-art algorithms achieving less than 50\% specificity and having poor agreement among them (\cite{Sethupathy:2006df,Alexiou:2009jq}). On the other hand, overexpression of miRNA coupled with expression profiling of mRNA by either microarray or RNA-seq has been recently developed (\cite{Lim:2005cd,Arvey:2010ev}). Consequently, genome-wide comparison of differential gene expression holds a new promise to elucidate the global impact of a specific miRNA regulation without solely relying on sequence information.
+
+We demonstrated that target prediction can be improved by integrating expression fold-change and sequence information such as context score and other orthogonal sequence-based features such as probability of conserved targeting (PCT) (\cite{Friedman:2009km}) into a probabilistic score (manuscript under peer-review). Our approach differs from previous expression-based target prediction methods in three important aspects. First, our method is able to identify condition-specific miRNA targets. In contrast, well-known methods such as GenMiR++ (\cite{Huang:2007do}) and GroupMiR (\cite{Le:2011wx}) are based on miRNA-target expression correlation, which requires a large set of the expression profiles measured across various tissues or sample conditions. Second, the proposed method is an unsupervised method such that it does not require training data unlike some other (regression-based) methods (\cite{Huang:2007do, Le:2011wx, Liu:2010di}). Third, our method operates on the entire gene set to more closely model the overall likelihood rather than only on a pre-filtered set of genes above some arbitrary cutoffs such as TargetScan score (\cite{Huang:2007do}) or sample variance (\cite{Le:2011wx}).
+
+
+
+
+\section{\Rpackage{TargetScore} overview}
+We describe a novel probabilistic method to miRNA target prediction problem using miRNA-overexpression data and sequence scores. As an overview, each score feature is considered as an independent observed variable as input to a Variational Bayesian-Gaussian Mixture Model (VB-GMM). Bayesian is chosen over maximum-likelihood approach to avoid overfitting. Specifically, given expression fold-change (due to miRNA transfection), we use a three-component VB-GMM to infer down-regulated targets accounting for genes with little or positive fold-change (due to off-target effects (\cite{Khan:2009ki})). Otherwise,  two-component VB-GMM is applied to unsigned sequence scores. The parameters for the VB-GMM are optimized using Variational Bayesian Expectation-Maximization (VB-EM) algorithm. Presumably, the mixture component with the largest absolute means of observed negative fold-change or sequence score is associated with miRNA targets and denoted as ``target component". The other components  correspond to the ``background component". It follows that inferring  miRNA-mRNA interactions most likely explained by the observed data is equivalent to inferring the posterior distribution of the target component given the observed variables. The targetScore is computed as the sigmoid-transformed fold-change weighted by the averaged posteriors of target components over all of the features. Please refer to the manual for specific paramter settings:
+
+<<TargetScore, eval=TRUE>>=
+library(TargetScore)
+@
+
+<<helppage, eval=FALSE>>=
+?TargetScore
+@
+
+
+
+\section{TargetScore input data}
+TargetScore operates on overexpression logarithmic fold-changes (logFC) and (optionally) sequence-based scores. In particular, gene expression in treatment (miRNA overexpressed) and (mock) control can be measured by either normalized signal intensities from microarray (e.g., hsa-miR-1 overexpressed in HeLa vs HeLa treated with mock control; GEO accession: GSE11968)or RPKM (reads per kilobase of exon per million mapped reads) by RNA-seq (e.g., hsa-miR-23b from GSE37918). The logFC for each gene is then defined as log(treatment) - log(control). The sequence scores vary depending on the specific sequence-based predictors used. For instance, user can download the pre-computed TargetScan context+ score and PCT (probabilities of conserved targeting) from TargetScan website (\url{http://www.targetscan.org/cgi-bin/targetscan/data_download.cgi?db=vert_61}).
+
+\section{A toy example}
+Suppose we overexpress an miRNA miR-X in HEK293 and measured the expression level of 1100 genes in the (un)treated cell. Comparing with control, 10 genes are down-regulated, 1000 unchanged, 90 up-regulated (possible due to off-target effects) in the transfected HEK293. In addition, the8 and 20 genes have sequence score A and B sampled from normal distribution with larger negative means (i.e. more likely to be a target). Our task to infer which genes out of the 1100 genes are targets of miRNA miR-X.
+
+<<toy, fig=TRUE, png=TRUE, eval=TRUE>>=
+trmt <- c(rnorm(10,mean=0.01), rnorm(1000,mean=1), rnorm(90,mean=2)) + 1e3
+
+ctrl <- c(rnorm(1100,mean=1)) + 1e3
+
+logFC <- log2(trmt) - log2(ctrl)
+
+# 8 out of the 10 down-reg genes have prominent seq score A
+seqScoreA <- c(rnorm(8,mean=-2), rnorm(1092,mean=0))
+
+# 10 down-reg genes plus 10 more genes have prominent seq score B
+seqScoreB <- c(rnorm(20,mean=-2), rnorm(1080,mean=0))
+
+seqScores <- cbind(seqScoreA, seqScoreB)             
+
+p.targetScore <- targetScore(logFC, seqScores, tol=1e-3)
+
+# plot relation between targetScore and input variables
+pairs(cbind(p.targetScore, logFC, seqScoreA, seqScoreB))
+@
+
+\section{Real data on hsa-miR-1 and hsa-miR-17}
+We are now going to apply TargetScore to predict targets of miRNA hsa-miR-1 and hsa-miR-17 (GEO accession: GSE20745). For hsa-miR-1, we chose from multiple studies on GEO the microarray data that correlate the most with the validated targets (\cite{Hsu:2011ed}). More details on the data processing and elaborate testing are described in the manuscript (in peer-review).
+
+
+<<realtest, eval=TRUE>>=
+extdata.dir <- system.file("extdata", package="TargetScore") 
+
+# load test data
+load(list.files(extdata.dir, "\\.RData$", full.names=TRUE))
+
+myTargetScores <- lapply(mytestdata, function(x) targetScore(logFC=x$logFC, seqScores=x[,c(3,4)], tol=1e3, maxiter=200))
+
+names(myTargetScores) <- names(mytestdata)
+
+valid <- lapply(names(myTargetScores), function(x) table((myTargetScores[[x]] > 0.3), mytestdata[[x]]$validated))
+
+names(valid) <- names(mytestdata)
+
+# row pred and col validated targets
+valid
+@
+
+\section{TargetScoreData}
+To automate the pipeline of calculating targetScore, we precomplied and processed to genergate miRNA-overexpression fold-changes from 84 Gene Expression Omnibus (GEO) series corresponding to 6 platforms, 77 human cells or tissues, and 112 distinct miRNAs. The end result is a data package: \Rpackage{TargetScoreData}. To our knowledge, this is by far the largest miRNA-pertubation data compendium. Accompanied with the data, we also included in this package the sequence feature scores from TargetScanHuman 6.1 including the context+ score and the probabilities of conserved targeting for each miRNA-mRNA interaction. Thus, the user can use these static sequence-based scores together with user-supplied tissue/cell-specific fold-change due to miRNA overexpression to predict miRNA targets using \Rpackage{TargetScore}.
+
+As a convenience function, we included the package a wrapper function called \texttt{getTargetScores} that does the following: (1) given a miRNA ID, obtain fold-change(s) from logFC.imputed matrix or use the user-supplied fold-changes; (2) retrives TargetScan context score (CS) and PCT (if found); (3) obtain validated targets from the local mirTarBase file; (4) compute targetScore. We apply \texttt{getTargetScores} function using miRNA hsa-miR-1, which we know has all three types of data, namely logFC, targetScan context score, and PCT.
+
+<<getTargetScores demo, eval=FALSE>>=
+library(TargetScoreData)
+library(gplots)
+
+myTargetScores <- getTargetScores("hsa-miR-1", tol=1e-3, maxiter=200)
+
+table((myTargetScores$targetScore > 0.1), myTargetScores$validated) # a very lenient cutoff
+
+# obtain all of targetScore for all of the 112 miRNA (takes time)
+
+logFC.imputed <- get_precomputed_logFC()
+
+mirIDs <- unique(colnames(logFC.imputed))
+
+# targetScoreMatrix <- mclapply(mirIDs, getTargetScores)
+
+# names(targetScoreMatrix) <- mirIDs
+@
+
+
+\section{Use \Rpackage{limma} package to compute logFC as input to TargetScore}
+
+TargetScore can be used easily as a downstream pipeline from a well-established differential analysis package such as \Rpackage{limma} (\cite{Smyth:2005fj}). The following code provides a  tutorial to obtain targetScore for hsa-miR-205. A brief workflow: (1) download the overexpression data from GEO using \texttt{getGEO} from (\cite{Davis:2007fc}); (2) compute logFC using functions from \Rpackage{limma}; (3) obtain targetScore using function \texttt{getTargetScores}.
+
+<<getTargetScores limma demo, eval=FALSE>>=
+# Demo using limma
+# download GEO data for hsa-miR-205
+library(limma)
+library(Biobase)
+library(GEOquery)
+library(gplots)
+
+gset <- getGEO("GSE11701", GSEMatrix =TRUE, AnnotGPL=TRUE)
+
+if (length(gset) > 1) idx <- grep("GPL6104", attr(gset, "names")) else idx <- 1
+
+gset <- gset[[idx]]
+
+geneInfo <- fData(gset)
+
+x <- normalizeVSN(exprs(gset))
+
+pData(gset)$title
+
+design <- model.matrix(~0+factor(c(1,1,1,1,2,2,2,2)))
+
+colnames(design) <- c("preNeg_control", "miR_205_transfect")
+
+fit <- lmFit(x, design)
+
+#contrast
+contrast.matrix <- makeContrasts(miR_205_transfect-preNeg_control,levels=design)
+
+fit2 <- contrasts.fit(fit, contrast.matrix)
+
+fit2 <- eBayes(fit2)
+
+limma_stats <- topTable(fit2, coef=1, number=nrow(fit2))
+
+limma_stats$gene_symbol <- geneInfo[match(limma_stats$ID, geneInfo$ID), "Gene symbol"]
+
+logFC <- as.matrix(limma_stats$logFC)
+
+rownames(logFC) <- limma_stats$gene_symbol
+
+# targetScore
+myTargetScores <- getTargetScores("hsa-miR-205", logFC, tol=1e-3, maxiter=200)
+@
+
+Using the validated targets for hsa-miR-205, we can now evaluate the sensitivity and specificity of using targetScore and p.value from limma based on receiver operating characteristic (ROC) curve as follows.
+
+<<ROC, fig=TRUE, eval=FALSE>>=
+library(ggplot2)
+library(scales)
+library(ROCR)
+
+# ROC
+roceval <- function(myscores, labels_true, method) {
+  	
+	pred <- prediction(myscores, labels_true)
+		
+	perf <- performance( pred, "tpr", "fpr" )
+
+	auc <- unlist(slot(performance( pred, "auc" ), "y.values"))
+
+	fpr <- unlist(slot(perf, "x.values"))
+	
+	tpr <- unlist(slot(perf, "y.values"))
+  
+	cutoffval <- unlist(slot(perf, "alpha.values"))
+
+	rocdf <- data.frame(x= fpr, y=tpr, cutoff=cutoffval, auc=auc, method=method,
+		methodScore=sprintf("%s (%s)", method, percent(auc)), curveType="ROC")
+
+	return(rocdf)	
+}
+
+limma_stats$p.val <- -log10(limma_stats$P.Value)
+
+limma_stats$p.val[logFC > 0] <- 0
+
+
+myeval <- rbind(
+  roceval(myTargetScores$targetScore, myTargetScores$validated, "TargetScore"),
+	roceval(limma_stats$p.val, myTargetScores$validated, "Limma"))
+
+
+ggroc <- ggplot(myeval, aes(x=x, y=y, color=methodScore)) +
+
+	geom_line(aes(linetype=methodScore), size=0.7) +
+	
+	scale_x_continuous("False positive rate", labels=percent) +
+	
+	scale_y_continuous("True positive rate", labels=percent) +
+	
+	theme(legend.title= element_blank())
+
+print(ggroc)
+
+@
+
+
+\section{Use \Rpackage{DESeq} package to compute logFC as input to TargetScore}
+We can also combine \Rpackage{DESeq} (\cite{Anders:2010yq}) with targetScore for RNA-seq miRNA-overexression data analysis as the following simulated tests.
+
+
+<<getTargetScores deseq demo, eval=FALSE>>=
+library(DESeq)
+
+cds <- makeExampleCountDataSet()
+
+cds <- estimateSizeFactors( cds )
+
+cds <- estimateDispersions( cds )
+
+deseq_stats <- nbinomTest( cds, "A", "B" )
+
+logFC <- deseq_stats$log2FoldChange[1:100]
+
+# random sequence score
+seqScoreA <- rnorm(length(logFC))
+
+seqScoreB <- rnorm(length(logFC))
+
+seqScores <- cbind(seqScoreA, seqScoreB)
+
+p.targetScore <- targetScore(logFC, seqScores, tol=1e-3)
+@
+
+
+\section{Summary}
+TargetScore is a flexbile package that takes logFC and sequence scores as optional inputs to compute the probability of each gene being the target of the overexpressed miRNA. User can compute logFC using the existing packages such as \Rpackage{limma} and \Rpackage{DESeq} as demonstrated above. The  function \texttt{getTargetScores} provides user a convenient way to obtain targetScore with either pre-computed input (logFC, targetScan context score, and PCT) or supplied logFC.
+
+
+
+\section{Session Info}
+<<sessi>>=
+sessionInfo()
+@
+
+
+\bibliography{TargetScore}
+\end{document}

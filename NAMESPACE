@@ -1,0 +1,18 @@
+importFrom("pracma", bsxfun, arrayfun, dot)
+
+importFrom("Matrix", sparseMatrix)
+
+export(
+  bsxfun.se,
+  dot.ext,
+  getTargetScores,
+  initialization,
+  logmvgamma,
+  logsumexp,
+  sort_components,
+  targetScore,  
+  vbgmm,
+  vbound,
+  vexp,
+  vmax
+)

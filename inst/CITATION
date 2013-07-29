@@ -1,0 +1,15 @@
+citEntry(entry="article",
+         title = "A probabilistic approach to explore human microRNA targetome using microRNA-overexpression data and sequence information",
+         author = personList(
+        as.person("Yue Li"), 
+        as.person("Anna Goldenberg"),
+				as.person("Ka-Chun Wong"),
+				as.person("Zhaolei Zhang")),
+         year = 2013,
+         journal = TBA,
+         volume = TBA,
+         pages = TBA,
+         doi = TBA,
+         url = TBA,
+         textVersion = paste("Yue Li, Anna Goldenberg, Ka-Chun Wong and Zhaolei Zhang (2013).",
+          "A probabilistic approach to explore human microRNA targetome using microRNA-overexpression data and sequence information") )
