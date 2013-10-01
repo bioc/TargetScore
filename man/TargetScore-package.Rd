@@ -12,7 +12,7 @@ Infer the posterior distributions of microRNA targets by probabilistically model
 \tabular{ll}{
 Package: \tab TargetScore\cr
 Type: \tab Package\cr
-Version: \tab 0.99.4\cr
+Version: \tab 0.99.5\cr
 Date: \tab 2013-06-30\cr
 License: \tab GPL-2\cr
 }
