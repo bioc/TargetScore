@@ -2,8 +2,8 @@ Package: TargetScore
 Type: Package
 Title: TargetScore: Infer microRNA targets using
         microRNA-overexpression data and sequence information
-Version: 1.1.0
-Date: 2013-06-30
+Version: 1.1.5
+Date: 2013-Oct-17
 Author: Yue Li
 Maintainer: Yue Li <yueli@cs.toronto.edu>
 Description: Infer the posterior distributions of microRNA targets by probabilistically modelling the likelihood microRNA-overexpression fold-changes and sequence-based scores. Variaitonal Bayesian Gaussian mixture model (VB-GMM) is applied to log fold-changes and sequence scores to obtain the posteriors of latent variable being the miRNA targets. The final targetScore is computed as the sigmoid-transformed fold-change weighted by the averaged posteriors of target components over all of the features.

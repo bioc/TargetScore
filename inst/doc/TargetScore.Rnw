@@ -35,7 +35,7 @@ urlcolor=black
 
 \bibliographystyle{plainnat}
 
-\title{\Rpackage{TargetScore}: Infer microRNA targets using microRNA-overexpression data and sequence information}
+\title{\Rpackage{TargetScore}: Infer microRNA targets using microRNA-overexpression data and sequence information (\cite{Li17102013})}
 \author{Yue Li \\ \texttt{yueli@cs.toronto.edu}}
 \date{\today}
 
@@ -44,7 +44,6 @@ urlcolor=black
 \SweaveOpts{concordance=TRUE}
 
 \maketitle
-
 
 \section{Introduction}
 MicroRNAs (miRNAs) are known to repress gene expression in mammalian species by forming Watson-Crick (WC) base-pairing to the 3$'$ UTR regions of the target mRNA transcripts (\cite{Friedman:2009km}). The binding primarily occurs at the 2-7 nucleotide (nt) positions from the 5$'$ end of the miRNA, which is termed as the ``seed" and the binding as the ``seed match" (\cite{Lewis:2003uz}). MicroRNA regulations have been implicated in numerous developmental and pathogenic processes (\cite{Bartel:2009fh}). Functional characterization of miRNAs depends on precise identification of their corresponding targets. However, accurate identification of miRNA targets remains a challenge with the current state-of-the-art algorithms achieving less than 50\% specificity and having poor agreement among them (\cite{Sethupathy:2006df,Alexiou:2009jq}). On the other hand, overexpression of miRNA coupled with expression profiling of mRNA by either microarray or RNA-seq has been recently developed (\cite{Lim:2005cd,Arvey:2010ev}). Consequently, genome-wide comparison of differential gene expression holds a new promise to elucidate the global impact of a specific miRNA regulation without solely relying on sequence information.
@@ -55,7 +54,7 @@ We demonstrated that target prediction can be improved by integrating expression
 
 
 \section{\Rpackage{TargetScore} overview}
-We describe a novel probabilistic method to miRNA target prediction problem using miRNA-overexpression data and sequence scores. As an overview, each score feature is considered as an independent observed variable as input to a Variational Bayesian-Gaussian Mixture Model (VB-GMM). Bayesian is chosen over maximum-likelihood approach to avoid overfitting. Specifically, given expression fold-change (due to miRNA transfection), we use a three-component VB-GMM to infer down-regulated targets accounting for genes with little or positive fold-change (due to off-target effects (\cite{Khan:2009ki})). Otherwise,  two-component VB-GMM is applied to unsigned sequence scores. The parameters for the VB-GMM are optimized using Variational Bayesian Expectation-Maximization (VB-EM) algorithm. Presumably, the mixture component with the largest absolute means of observed negative fold-change or sequence score is associated with miRNA targets and denoted as ``target component". The other components  correspond to the ``background component". It follows that inferring  miRNA-mRNA interactions most likely explained by the observed data is equivalent to inferring the posterior distribution of the target component given the observed variables. The targetScore is computed as the sigmoid-transformed fold-change weighted by the averaged posteriors of target components over all of the features. Please refer to the manual for specific paramter settings:
+We describe a novel probabilistic method to miRNA target prediction problem using miRNA-overexpression data and sequence scores \cite{Li17102013}. As an overview, each score feature is considered as an independent observed variable as input to a Variational Bayesian-Gaussian Mixture Model (VB-GMM). Bayesian is chosen over maximum-likelihood approach to avoid overfitting. Specifically, given expression fold-change (due to miRNA transfection), we use a three-component VB-GMM to infer down-regulated targets accounting for genes with little or positive fold-change (due to off-target effects (\cite{Khan:2009ki})). Otherwise,  two-component VB-GMM is applied to unsigned sequence scores. The parameters for the VB-GMM are optimized using Variational Bayesian Expectation-Maximization (VB-EM) algorithm. Presumably, the mixture component with the largest absolute means of observed negative fold-change or sequence score is associated with miRNA targets and denoted as ``target component". The other components  correspond to the ``background component". It follows that inferring  miRNA-mRNA interactions most likely explained by the observed data is equivalent to inferring the posterior distribution of the target component given the observed variables. The targetScore is computed as the sigmoid-transformed fold-change weighted by the averaged posteriors of target components over all of the features. Please refer to the manual for specific paramter settings:
 
 <<TargetScore, eval=TRUE>>=
 library(TargetScore)

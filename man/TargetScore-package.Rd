@@ -12,8 +12,8 @@ Infer the posterior distributions of microRNA targets by probabilistically model
 \tabular{ll}{
 Package: \tab TargetScore\cr
 Type: \tab Package\cr
-Version: \tab 0.99.5\cr
-Date: \tab 2013-06-30\cr
+Version: \tab 1.1.5\cr
+Date: \tab 2013-10-15\cr
 License: \tab GPL-2\cr
 }
 The front-end main function \code{\link{targetScore}} should be used to obtain the probablistic score of miRNA target. The workhourse function is \code{\link{vbgmm}}, which implementates multivariate variational Bayesian Gaussian mixture model.
