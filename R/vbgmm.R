@@ -155,7 +155,9 @@ vbgmm <- function(data, init=2, prior, tol=1e-20, maxiter=2e3, mirprior=TRUE,
 			)
 			
 		} else { # more general prior with equal alpha
-				
+			
+			if(length(init)>1) k <- ncol(init) else k <- init
+			
 			prior <- list(
 				alpha = rep(1,k),
 				kappa = 1,

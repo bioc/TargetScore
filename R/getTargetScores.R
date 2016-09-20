@@ -12,7 +12,7 @@ getTargetScores <- function(mirID, logFC, ...) {
     
 	if(missing(logFC)) {
 		
-		logFC.imputed <- get_precomputed_logFC()
+		load(sprintf("%s/logFC.imputed.RData",system.file("extdata", package = "TargetScoreData")))
 		
 		logFC <- logFC.imputed[,colnames(logFC.imputed) == mirID, drop=F]
 	}
