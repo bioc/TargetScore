@@ -2,7 +2,7 @@ Package: TargetScore
 Type: Package
 Title: TargetScore: Infer microRNA targets using
         microRNA-overexpression data and sequence information
-Version: 1.23.0
+Version: 1.24.0
 Date: 2013-Oct-17
 Author: Yue Li
 Maintainer: Yue Li <yueli@cs.toronto.edu>
